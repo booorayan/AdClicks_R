@@ -1,0 +1,18 @@
+---
+title: "Predicting Ad Clicks on Website"
+author: "Booorayan"
+date: "26/10/2019"
+output: html_document
+---
+
+```{r}
+clickad <- read.csv("~/arrr/advertising.csv")
+head(clickad)
+
+# viewing a summary of the dataframe
+summary(clickad)
+```
+```{r}
+
+
+```
