@@ -9,6 +9,8 @@ output: html_document
 # loading the dataset
 clickad <- read.csv("advertising.csv")
 head(clickad)
+
+tail(clickad)
 ```
 
 
@@ -21,7 +23,10 @@ cols
 
 # dataframe has 1000 rows and 10 columns
 ```
+```{r}
 
+colnames(clickad)
+```
 
 ```{r}
 
@@ -49,10 +54,12 @@ dup_val
 ```
 
 
+
+
 ```{r}
 
 # Plotting a boxplot to check for outliers
-boxplot(clickad,col = "blue",plot=TRUE)
+boxplot(clickad, range=1,col="blue",plot=TRUE,)
 
 ```
 
@@ -63,12 +70,70 @@ boxplot.stats(clickad$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.o
 ```
 
 
+
+
+```{r}
+columns <- c(colnames(clickad))
+
+
+for (col in columns[1:4]) {
+  print(var(clickad[col]))
+  
+}
+
+
+```
+
+```{r}
+# checking for unique values in clicked on ad column
+unique(clickad$Clicked.on.Ad)
+
+```
+
+```{r}
+
+table(clickad$Clicked.on.Ad)
+
+# target variable is balanced as both outcomes have equal no. of observations
+```
+
 ```{r}
 # Data Exploration & Cleaning 
 
 
 # viewing a summary of the dataframe
-summary(clickad)
+summary(clickad[c("Daily.Time.Spent.on.Site", "Age", "Area.Income", "Daily.Internet.Usage")])
+
+# according to output, there is need to normalize the data to reduce bias
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+# creating a function to normalize data to reduce bias 
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+```
+
+```{r}
+clickad_norm <- as.data.frame(lapply(clickad[1:4], normalize))
+summary(clickad_norm)
+```
+
+```{r}
+merged.frame <- cbind.data.frame(clickad_norm,clickad[5:10])
+head(merged.frame)
 ```
 
 ```{r}
