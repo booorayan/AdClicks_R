@@ -1,17 +1,76 @@
 ---
-title: "Predicting Ad Clicks on Website"
+title: "Predicting Ad Clicks on  A Website"
 author: "Booorayan"
 date: "26/10/2019"
 output: html_document
 ---
 
 ```{r}
-clickad <- read.csv("~/arrr/advertising.csv")
+# loading the dataset
+clickad <- read.csv("advertising.csv")
 head(clickad)
+```
+
+
+```{R}
+
+# checking for dimensions of the dataframe
+
+cols <- dim(clickad)
+cols
+
+# dataframe has 1000 rows and 10 columns
+```
+
+
+```{r}
+
+strr <- str(clickad)
+strr
+
+```
+
+```{r}
+
+# Checking for the sum of missing values in each column
+miss <- colSums(is.na(clickad))
+miss
+
+# Output reveals no column has missing values
+```
+
+```{r}
+# Checking for duplicate values 
+dup_val <- clickad[duplicated(clickad),]
+dup_val
+
+# Dataframe has no duplicated values
+
+```
+
+
+```{r}
+
+# Plotting a boxplot to check for outliers
+boxplot(clickad,col = "blue",plot=TRUE)
+
+```
+
+```{r}
+
+boxplot.stats(clickad$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+
+```
+
+
+```{r}
+# Data Exploration & Cleaning 
+
 
 # viewing a summary of the dataframe
 summary(clickad)
 ```
+
 ```{r}
 
 
