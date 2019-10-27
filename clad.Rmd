@@ -2,8 +2,26 @@
 title: "Predicting Ad Clicks on  A Website"
 author: "Booorayan"
 date: "26/10/2019"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
+
+
+
+```{r}
+
+# importing required libraries
+library("aod")
+library("ggplot2")
+library(xgboost) # for xgboost
+library(tidyverse) # general utility functions
+library(randomForest) 
+library(Metrics)
+library(caret)
+
+```
+
 
 ```{r}
 # loading the dataset
@@ -53,19 +71,85 @@ dup_val
 
 ```
 
+```{r}
+library(tidyverse)
+clickad$Timestamp <- as.Date(clickad$Timestamp)
+clickad$Time <- format(as.POSIXct(clickad$Timestamp, format="%Y-%m-%d %H:%M:%S"), "%H:%M:%S")
+clickad$Date <- format(as.POSIXct(clickad$Timestamp, format="%Y-%m-%d %H:%M:%S"), "%Y:%m:%d")
+
+head(clickad)
+
+```
+
+```{r}
+# library(tidyverse)
+library(lubridate)
+#clickad$Date <- ymd(clickad$Date)
+#clickad$Time <- hms(clickad$Time)
+
+clickad = clickad %>%
+  mutate(Date = ymd(Date)) %>%
+  mutate_at(vars(Date), funs(year, month, day))
+
+head(clickad) 
+```
+
+```{r}
+
+clickad = clickad %>%
+  mutate(Time = hms(Time)) %>%
+  mutate_at(vars(Time), funs(hour, minute))
+
+head(clickad)
+
+```
 
 
+```{r}
+clickad.nn <- subset(clickad, select = c(1,2,3,4,5,6,7,8,10,13,14,15,16,17))
+
+head(clickad.nn)
+
+#clickad$Time <- as.Date(clickad$Time)
+#str(clickad)
+```
+
+```{r}
+# dropping column 5 and 6 because they have a high number of unique values
+clickad.nn <- subset(clickad, select = c(1,2,3,4,7,8,10,13,14,15,16,17))
+
+head(clickad.nn)
+
+```
+
+```{r}
+#install.packages("plyr")
+library("dplyr")
+library("plyr")
+count(clickad.nn$Country)
+```
+
+```{r}
+
+length(unique(clickad.nn$Country))
+
+```
+
+```{r}
+
+
+```
 
 ```{r}
 
 # Plotting a boxplot to check for outliers
-boxplot(clickad, range=1,col="blue",plot=TRUE,)
+boxplot(clickad.nn[c(1,2,3,4,9,10)],col="blue",plot=TRUE)
 
 ```
 
 ```{r}
 
-boxplot.stats(clickad$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+boxplot.stats(clickad.nn$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.out = TRUE)
 
 ```
 
@@ -73,11 +157,11 @@ boxplot.stats(clickad$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.o
 
 
 ```{r}
-columns <- c(colnames(clickad))
+columns <- c(colnames(clickad.nn))
 
 
 for (col in columns[1:4]) {
-  print(var(clickad[col]))
+  print(var(clickad.nn[col]))
   
 }
 
@@ -86,13 +170,13 @@ for (col in columns[1:4]) {
 
 ```{r}
 # checking for unique values in clicked on ad column
-unique(clickad$Clicked.on.Ad)
+unique(clickad.nn$Clicked.on.Ad)
 
 ```
 
 ```{r}
 
-table(clickad$Clicked.on.Ad)
+table(clickad.nn$Clicked.on.Ad)
 
 # target variable is balanced as both outcomes have equal no. of observations
 ```
@@ -102,20 +186,120 @@ table(clickad$Clicked.on.Ad)
 
 
 # viewing a summary of the dataframe
-summary(clickad[c("Daily.Time.Spent.on.Site", "Age", "Area.Income", "Daily.Internet.Usage")])
+summary(clickad.nn[c("Daily.Time.Spent.on.Site", "Age", "Area.Income", "Daily.Internet.Usage")])
 
 # according to output, there is need to normalize the data to reduce bias
 ```
 
 ```{r}
+age <- clickad.nn$Age
+
+age.freq <- table(age)
+barplot(age.freq,xlab = "Age", ylab = "Count", main = "Barplot Showing Age Distribution Clients",col = "darkorange")
+
+```
+
+```{r}
+hist(clickad.nn$Daily.Time.Spent.on.Site, freq = T,col = "darkgray",xlab = "Daily Time Spent on the Site", main = "Histogram Showing Amount of Time Spent on Site")
+
+```
+
+```{r}
+hist(clickad.nn$Age, freq = T,col = "blue",xlab = "Age", main="Histogram Showing Age Distribution of Clients")
+
+# most site's clients are between the ages of 25 and 40
+```
+
+```{r}
+hist(clickad.nn$Area.Income, freq = T,col = "darkgreen",xlab = "Area Income", main="Histogram Showing Area Income Distribution of Clients")
+
+# most site's clients are between the ages of 25 and 40
+```
+
+```{r}
+
+#age <- clickad.nn$Age
+tsoin <- clickad.nn$Daily.Time.Spent.on.Site
+plot(age, tsoin, xlab="Age", ylab="Time Spent on the Site",main = "Scatterplot Showing Correlation Between Age and Time Spent on Site")
 
 ```
 
 
 ```{r}
+ar.income <- clickad.nn$Area.Income
+int.con <- clickad.nn$Daily.Internet.Usage
+plot(ar.income, int.con, xlab="Area Income", ylab="Daily Internet Usage", main = "Scatterplot Showing Correlation Between Area Income and Daily Internet Usage",)
+
 
 ```
 
+```{r}
+
+
+plot(tsoin, int.con, ylab="Internet Usage", xlab="Time Spent on Site", main = "Scatterplot Showing Correlation Between Time Spent on Site and Internet Usage")
+
+
+```
+
+```{r}
+
+# creating a function to normalize data to reduce bias 
+#normalize <- function(x) {
+ # return((x - min(x)) / (max(x) - min(x)))
+#}
+
+```
+
+```{r}
+#clickad.norm <- as.data.frame(lapply(clickad.nn[1:4], normalize))
+#summary(clickad.norm)
+```
+
+```{r}
+
+head(clickad.nn)
+```
+
+```{r}
+merged.frame <- clickad.nn
+head(merged.frame)
+```
+
+
+```{r}
+str(merged.frame)
+#merged.frame <- data.matrix(merged.frame)
+
+```
+
+```{r}
+#merged.frame[sapply(merged.frame, is.factor)] <- data.matrix(merged.frame[sapply(merged.frame, is.factor)])
+
+merged.frame = merged.frame %>% mutate_if(is.factor, as.numeric)
+
+```
+
+
+```{r}
+head(merged.frame)
+
+```
+
+```{r}
+
+unique(merged.frame$year)
+unique(merged.frame$hour)
+unique(merged.frame$minute)
+```
+
+
+```{r}
+# dropping year, hour and minute columns because they are constant 
+
+merged.fr <- subset(merged.frame, select = c(1,2,3,4,5,6,7,9,10))
+head(merged.fr)
+tail(merged.fr)
+```
 
 ```{r}
 
@@ -127,16 +311,305 @@ normalize <- function(x) {
 ```
 
 ```{r}
-clickad_norm <- as.data.frame(lapply(clickad[1:4], normalize))
-summary(clickad_norm)
+feat.norm <- as.data.frame(lapply(merged.fr[c(1, 2, 3, 4, 5, 6, 8, 9)], normalize))
+summary(feat.norm)
 ```
 
 ```{r}
-merged.frame <- cbind.data.frame(clickad_norm,clickad[5:10])
-head(merged.frame)
+head(feat.norm)
+
+```
+```{r}
+merged.frm <- cbind(feat.norm, merged.fr[c(7)])
+
+head(merged.frm)
+tail(merged.frm)
+
+
+```
+
+
+```{r}
+
+#label <- subset(merged.fr, select = c(7))
+#features <- subset(merged.fr, select = c(1,2,3,4,5,8,9))
+#head(label)
+#head(features)
+```
+
+
+```{r}
+
+# split data into testing & training
+set.seed(1234)
+
+# 80-20 train/test split 
+train.index <- createDataPartition(merged.frm$Clicked.on.Ad, p = .2, list = F)
+trainn <- merged.frm[train.index, ]
+test  <- merged.frm[-train.index, ]
+head(test)
 ```
 
 ```{r}
 
+# get predictors
+predictor <- trainn %>%
+  select(-c(Clicked.on.Ad, Country)) %>%
+  as.matrix()
+
+output <- trainn$Clicked.on.Ad %>%
+  as.factor()
+
+str(output)
+class(output)
+```
+
+
+```{r}
+# train a random forest model for Classification
+model <- randomForest(x = predictor, y = output,
+                      ntree = 50) # number of trees
+
+# check out the details
+model
+
 
 ```
+
+```{r}
+
+rfpred = predict(model, type="response", newdata= as.data.frame(predictor))
+
+summary(rfpred)
+
+table(output, rfpred)
+
+#accracy <- (385 + 388) / (385 + 15 + 12 + 388) * 100
+#accracy
+
+```
+
+```{r}
+#use caret to pick a value for mtry
+
+#install.packages("caret") 
+#install.packages('e1071', dependencies=TRUE)
+
+
+tuned_model <- train(x = predictor, y = output,
+                     ntree = 10,       # number of trees (passed on random forest)
+                     method = "rf")     # random forests
+
+tuned_model
+
+```
+
+
+```{r}
+# plot the rmse for various possible training values
+ggplot(tuned_model)
+
+```
+
+```{r}
+# plot both plots at once
+par(mfrow = c(1,2))
+
+varImpPlot(model, n.var = 5)
+varImpPlot(tuned_model$finalModel, n.var = 5)
+tuned_model$finalModel
+
+```
+
+```{r}
+logit <- glm(Clicked.on.Ad ~ Daily.Time.Spent.on.Site + Age + Area.Income + Daily.Internet.Usage + Male + month + day, family="binomial", data=merged.frm)
+summary(logit)
+```
+
+
+
+
+```{r}
+predictTrain = predict(logit, type="response")
+
+summary(predictTrain)
+
+tapply(predictTrain, merged.fr$Clicked.on.Ad, mean)
+
+```
+
+```{r}
+# Confusion matrix for threshold of 0.5
+table(merged.fr$Clicked.on.Ad, predictTrain > 0.5)
+
+acc <- (490 + 482) / (490 + 10 + 18 + 482) * 100
+acc
+```
+
+```{r}
+
+predictorr <- test %>%
+  select(-c(Clicked.on.Ad, Country)) %>%
+  as.matrix()
+
+outputt <- test$Clicked.on.Ad %>%
+  as.factor()
+
+```
+
+```{r}
+
+predicted = predict(logit, type="response", newdata= as.data.frame(predictorr))
+ 
+summary(predicted)
+
+table(outputt,predicted >= 0.3)
+
+accuracy <- (385 + 388) / (385 + 15 + 12 + 388) * 100
+accuracy
+#tapply(predicted, trainn$Clicked.on.Ad, mean)
+
+```
+
+
+
+
+```{r}
+
+predor <- trainn %>%
+  select(-c(Clicked.on.Ad, Country)) %>%
+  as.matrix()
+
+outut <- trainn$Clicked.on.Ad %>%
+  as.numeric()
+
+```
+
+
+```{r}
+
+predorr <- test %>%
+  select(-c(Clicked.on.Ad, Country)) %>%
+  as.matrix()
+
+oututt <- test$Clicked.on.Ad %>%
+  as.numeric()
+
+```
+
+```{r}
+# put our testing & training data into two seperates Dmatrixs objects
+dtrain <- xgb.DMatrix(data = predor, label= outut)
+dtest <- xgb.DMatrix(data = predorr, label= oututt)
+head(output)
+```
+
+
+
+```{r}
+# train a model using our training data
+xg.model <- xgboost(data = dtrain, # the data   
+                 nround = 2, # max number of boosting iterations
+                 objective = "binary:logistic")  # the objective function
+
+```
+
+```{r}
+
+# generate predictions for our held-out testing data
+predd <- predict(xg.model, dtest)
+
+# get & print the classification error
+err <- mean(as.numeric(predd > 0.5) != oututt)
+print(paste("test-error=", err))
+
+```
+
+```{r}
+
+# train an xgboost model
+xg.model.tuned <- xgboost(data = dtrain, # the data           
+                 max.depth = 3, # the maximum depth of each decision tree
+                 nround = 2, # max number of boosting iterations
+                 objective = "binary:logistic") # the objective function 
+
+# generate predictions for our held-out testing data
+preed <- predict(xg.model.tuned, dtest)
+
+# get & print the classification error
+errr <- mean(as.numeric(preed > 0.5) != oututt)
+print(paste("test-error=", errr))
+
+```
+
+
+```{r}
+
+# get the number of negative & positive cases in our data
+negative_cases <- sum(outut == FALSE)
+postive_cases <- sum(outut == TRUE)
+
+# train a model using our training data
+model.tuned <- xgboost(data = dtrain, # the data           
+                 max.depth = 3, # the maximum depth of each decision tree
+                 nround = 10, # number of boosting rounds
+                 early_stopping_rounds = 3, # if we dont see an improvement in this many rounds, stop
+                 objective = "binary:logistic", # the objective function
+                 scale_pos_weight = negative_cases/postive_cases) # control for imbalanced classes
+
+# generate predictions for our held-out testing data
+prred <- predict(model.tuned, dtest)
+
+# get & print the classification error
+erro <- mean(as.numeric(prred > 0.5) != oututt)
+print(paste("test-error=", erro))
+
+table(oututt,prred >= 0.3)
+
+accuy <- (362 + 380) / (362 + 38 + 20 + 380) * 100
+accuy
+
+```
+
+
+```{r}
+# train a model using our training data
+mdel.tuned <- xgboost(data = dtrain, # the data           
+                 max.depth = 3, # the maximum depth of each decision tree
+                 nround = 10, # number of boosting rounds
+                 early_stopping_rounds = 3, # if we dont see an improvement in this many rounds, stop
+                 objective = "binary:logistic", # the objective function
+                 scale_pos_weight = negative_cases/postive_cases, # control for imbalanced classes
+                 gamma = 1) # add a regularization term
+
+# generate predictions for our held-out testing data
+ppred <- predict(mdel.tuned, dtest)
+
+# get & print the classification error
+errr <- mean(as.numeric(ppred > 0.5) != oututt)
+print(paste("test-error=", errr))
+
+
+```
+
+```{r}
+
+table(oututt,ppred >= 0.3)
+
+accy <- (363 + 380) / (363 + 37 + 20 + 380) * 100
+accy
+```
+
+```{r}
+#feat.train <- feat.norm[1:700, ]
+#feat.test <- feat.norm[701:1000, ]
+#label.train <- label[1:700,1]
+#label.test <- label[701:1000,1]
+
+#length(label.test)
+```
+
+
+
+
+
