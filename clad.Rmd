@@ -3,8 +3,8 @@ title: "Predicting Ad Clicks on  A Website"
 author: "Booorayan"
 date: "26/10/2019"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 
@@ -256,7 +256,7 @@ heatmap(dat.cor,main = "Heatmap Showing Correlation Between Numeric Variables",s
 ```
 
 ```{r}
-install.packages("corrplot")
+#install.packages("corrplot")
 
 ```
 
@@ -264,6 +264,7 @@ install.packages("corrplot")
 library(corrplot)
 
 corrplot(dat.cor)
+
 ```
 
 ```{r}
@@ -619,6 +620,7 @@ length(knntes.test)
 
 ```{r}
 #fitting the model with data
+library(class)
 knn.mod <- knn(train=knnf.train, test=knnf.test, cl= knntes.train, k=10)
 
 ```
