@@ -342,15 +342,6 @@ tail(merged.frm)
 
 ```{r}
 
-#label <- subset(merged.fr, select = c(7))
-#features <- subset(merged.fr, select = c(1,2,3,4,5,8,9))
-#head(label)
-#head(features)
-```
-
-
-```{r}
-
 # split data into testing & training
 set.seed(1234)
 
@@ -438,8 +429,6 @@ summary(logit)
 ```
 
 
-
-
 ```{r}
 predictTrain = predict(logit, type="response")
 
@@ -448,6 +437,7 @@ summary(predictTrain)
 tapply(predictTrain, merged.fr$Clicked.on.Ad, mean)
 
 ```
+
 
 ```{r}
 # Confusion matrix for threshold of 0.5
@@ -468,6 +458,7 @@ outputt <- test$Clicked.on.Ad %>%
 
 ```
 
+
 ```{r}
 
 predicted = predict(logit, type="response", newdata= as.data.frame(predictorr))
@@ -482,8 +473,7 @@ accuracy
 
 ```
 
-
-
+Using XGBoost 
 
 ```{r}
 
@@ -497,6 +487,7 @@ outut <- trainn$Clicked.on.Ad %>%
 ```
 
 
+
 ```{r}
 
 predorr <- test %>%
@@ -508,13 +499,13 @@ oututt <- test$Clicked.on.Ad %>%
 
 ```
 
+
 ```{r}
 # put our testing & training data into two seperates Dmatrixs objects
 dtrain <- xgb.DMatrix(data = predor, label= outut)
 dtest <- xgb.DMatrix(data = predorr, label= oututt)
 head(output)
 ```
-
 
 
 ```{r}
@@ -524,6 +515,7 @@ xg.model <- xgboost(data = dtrain, # the data
                  objective = "binary:logistic")  # the objective function
 
 ```
+
 
 ```{r}
 
@@ -535,6 +527,7 @@ err <- mean(as.numeric(predd > 0.5) != oututt)
 print(paste("test-error=", err))
 
 ```
+
 
 ```{r}
 
@@ -603,6 +596,7 @@ print(paste("test-error=", errr))
 
 ```
 
+
 ```{r}
 
 table(oututt,ppred >= 0.3)
@@ -610,17 +604,4 @@ table(oututt,ppred >= 0.3)
 accy <- (363 + 380) / (363 + 37 + 20 + 380) * 100
 accy
 ```
-
-```{r}
-#feat.train <- feat.norm[1:700, ]
-#feat.test <- feat.norm[701:1000, ]
-#label.train <- label[1:700,1]
-#label.test <- label[701:1000,1]
-
-#length(label.test)
-```
-
-
-
-
 
