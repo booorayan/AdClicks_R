@@ -182,6 +182,13 @@ table(clickad.nn$Clicked.on.Ad)
 ```
 
 ```{r}
+tab <- table(clickad.nn$Clicked.on.Ad)
+
+barplot(tab,main = "Countplot Showing Distribution of Ad Clicks",xlab = "Ad Clicks",col="darkgreen")
+
+```
+
+```{r}
 # Data Exploration & Cleaning 
 
 
@@ -242,17 +249,21 @@ plot(tsoin, int.con, ylab="Internet Usage", xlab="Time Spent on Site", main = "S
 ```
 
 ```{r}
-
-# creating a function to normalize data to reduce bias 
-#normalize <- function(x) {
- # return((x - min(x)) / (max(x) - min(x)))
-#}
+dat.cor <- cor(clickad.nn[c(1,2,3,4,5,7,9,10)], method = "pearson")
+palette = colorRampPalette(c("red", "orange", "white")) (20)
+heatmap(dat.cor,main = "Heatmap Showing Correlation Between Numeric Variables",symm=T )
 
 ```
 
 ```{r}
-#clickad.norm <- as.data.frame(lapply(clickad.nn[1:4], normalize))
-#summary(clickad.norm)
+install.packages("corrplot")
+
+```
+
+```{r}
+library(corrplot)
+
+corrplot(dat.cor)
 ```
 
 ```{r}
