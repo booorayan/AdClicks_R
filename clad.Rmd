@@ -12,8 +12,9 @@ output:
 ```{r}
 
 # importing required libraries
-library("aod")
-library("ggplot2")
+library(dplyr)
+library(aod)
+library(ggplot2)
 library(xgboost) # for xgboost
 library(tidyverse) # general utility functions
 library(randomForest) 
@@ -24,32 +25,40 @@ library(caret)
 
 
 ```{r}
-# loading the dataset
+# loading the csv file and storing it a variable clickad
 clickad <- read.csv("advertising.csv")
-head(clickad)
 
-tail(clickad)
 ```
 
+```{r}
+# previewing the first five obseervations in the dataframe 
+head(clickad)
 
-```{R}
+# previewing the last five observations in the dataframe
+tail(clickad)
+
+```
+
+```{r}
 
 # checking for dimensions of the dataframe
-
 cols <- dim(clickad)
 cols
 
 # dataframe has 1000 rows and 10 columns
 ```
 ```{r}
-
+# checking the names of columns in the dataset
 colnames(clickad)
+
 ```
 
 ```{r}
-
+# displaying the internal structure of the datframe
 strr <- str(clickad)
 strr
+
+# output reveals we have 6 numerical variables and 4 columns of datatype factors
 
 ```
 
@@ -73,8 +82,14 @@ dup_val
 
 ```{r}
 library(tidyverse)
+
+# converting timestamp column to type date
 clickad$Timestamp <- as.Date(clickad$Timestamp)
+
+# creating a column time that is split from timestamp column
 clickad$Time <- format(as.POSIXct(clickad$Timestamp, format="%Y-%m-%d %H:%M:%S"), "%H:%M:%S")
+
+# creating date column that is split/stripped from timestamp column
 clickad$Date <- format(as.POSIXct(clickad$Timestamp, format="%Y-%m-%d %H:%M:%S"), "%Y:%m:%d")
 
 head(clickad)
@@ -82,11 +97,9 @@ head(clickad)
 ```
 
 ```{r}
-# library(tidyverse)
 library(lubridate)
-#clickad$Date <- ymd(clickad$Date)
-#clickad$Time <- hms(clickad$Time)
 
+# splitting the date column into year, month and day columns using mutate function
 clickad = clickad %>%
   mutate(Date = ymd(Date)) %>%
   mutate_at(vars(Date), funs(year, month, day))
@@ -95,7 +108,7 @@ head(clickad)
 ```
 
 ```{r}
-
+# splitting the time column into hour and minute columns
 clickad = clickad %>%
   mutate(Time = hms(Time)) %>%
   mutate_at(vars(Time), funs(hour, minute))
@@ -106,12 +119,11 @@ head(clickad)
 
 
 ```{r}
+# selecting a subset of the dataframe without the columns timestamp, time and date and storing it in a new variable
+# the columns are dropped to remove duplicate data
 clickad.nn <- subset(clickad, select = c(1,2,3,4,5,6,7,8,10,13,14,15,16,17))
-
 head(clickad.nn)
 
-#clickad$Time <- as.Date(clickad$Time)
-#str(clickad)
 ```
 
 ```{r}
@@ -126,13 +138,18 @@ head(clickad.nn)
 #install.packages("plyr")
 library("dplyr")
 library("plyr")
+
+# displaying the value count of each country in the country column using coun tfunction from plyr library
 count(clickad.nn$Country)
+
 ```
 
 ```{r}
-
+# checking the length/no of unique in the country column
 length(unique(clickad.nn$Country))
 
+# the column has 237 unique countries.
+# the number of countries is very high. High number of unique values means the column can be dropped as part of feature engineering 
 ```
 
 ```{r}
@@ -142,77 +159,108 @@ length(unique(clickad.nn$Country))
 
 ```{r}
 
-# Plotting a boxplot to check for outliers
-boxplot(clickad.nn[c(1,2,3,4,9,10)],col="blue",plot=TRUE)
+# Plotting boxplots to check for outliers
+boxplot(clickad.nn[c(1,2,3,4,9,10)], plot=TRUE, main="Boxplots For Numeric Variables", col="coral4")
 
+# output reveals the area income column has outliers (values lower than the minimum)
 ```
 
 ```{r}
+boxplot.stats(clickad.nn$Age, coef = 1.5, do.conf = TRUE, do.out = TRUE)
 
-boxplot.stats(clickad.nn$Daily.Time.Spent.on.Site, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+# from the output of the statistics of the boxplot, we gather that the minimum age is 19 and the maximum age is 61. The median age is 35
+# the $n part reveals that the age column has 1000 none null values
+# the $out section reveals the column has no outliers
+```
 
+```{r}
+boxplot.stats(clickad.nn$Area.Income, coef = 1.5, do.conf = TRUE, do.out = TRUE)
+
+# from the output of the statistics of the boxplot, we gather that the minimum area income is 19345.36 and the maximum area income is 79484.80. The median area income is 57012.30
+# the $n part reveals that the age column has 1000 none null values
+# the $out section reveals the column has 8 outliers
 ```
 
 
-
-
 ```{r}
+# checking the variance of column 1-4 in the dataframe
+
 columns <- c(colnames(clickad.nn))
-
 
 for (col in columns[1:4]) {
   print(var(clickad.nn[col]))
   
 }
 
+# All the four columns exhibit high variance with Area income column recording the highest variance
 
 ```
 
 ```{r}
-# checking for unique values in clicked on ad column
+# creating a table of total no. of males and females
+teb <- table(clickad.nn$Male)
+
+# plotting a barplot/countplot of the total no. of males and females
+barplot(teb, main = "Countplot Showing Distribution of Males and Females",xlab = "Ad Clicks",col=terrain.colors(2))
+
+# output reveals no. of males and females is somewhat evenly distributed. The totals differ only slightly
+
+```
+
+
+```{r}
+# checking for unique values in clicked on ad column/target column
 unique(clickad.nn$Clicked.on.Ad)
 
 ```
 
 ```{r}
-
+# creating a table of the total no. of 0 and 1 in clicked on ad column
 table(clickad.nn$Clicked.on.Ad)
 
 # target variable is balanced as both outcomes have equal no. of observations
 ```
 
 ```{r}
+# creating a table of total no. of 0 and 1 in the target variable
 tab <- table(clickad.nn$Clicked.on.Ad)
 
-barplot(tab,main = "Countplot Showing Distribution of Ad Clicks",xlab = "Ad Clicks",col="darkgreen")
+#plotting a barplot/countplot of total no. of 0 and 1 in the target variable
+barplot(tab,main = "Countplot Showing Distribution of Ad Clicks",xlab = "Ad Clicks",col=topo.colors(2))
 
+# countplot shows the values are evenly balanced at 500
 ```
 
+
 ```{r}
-# Data Exploration & Cleaning 
-
-
 # viewing a summary of the dataframe
 summary(clickad.nn[c("Daily.Time.Spent.on.Site", "Age", "Area.Income", "Daily.Internet.Usage")])
 
-# according to output, there is need to normalize the data to reduce bias
+# according to output, there is need to normalize the data to reduce bias towards high values (i.e area income)
 ```
 
 ```{r}
+# storing age column in a new variable
 age <- clickad.nn$Age
 
+# creating a frequency table 
 age.freq <- table(age)
-barplot(age.freq,xlab = "Age", ylab = "Count", main = "Barplot Showing Age Distribution Clients",col = "darkorange")
 
+# plotting a barplot of the frequency table
+barplot(age.freq,xlab = "Age", ylab = "Count", main = "Barplot Showing Age Distribution Clients",col = "coral")
+
+# output reveals most clients are aged between 28 and 36 years
 ```
 
 ```{r}
-hist(clickad.nn$Daily.Time.Spent.on.Site, freq = T,col = "darkgray",xlab = "Daily Time Spent on the Site", main = "Histogram Showing Amount of Time Spent on Site")
+# plotting a histogram to show distribution of daily time spent site by clients
+hist(clickad.nn$Daily.Time.Spent.on.Site, freq = T,col = "burlywood3",xlab = "Daily Time Spent on the Site", main = "Histogram Showing Amount of Time Spent on Site")
 
+# acccording to the histogram, most users spend between 60-85hrs on the site
 ```
 
 ```{r}
-hist(clickad.nn$Age, freq = T,col = "blue",xlab = "Age", main="Histogram Showing Age Distribution of Clients")
+hist(clickad.nn$Age, freq = T,col = "bisque4",xlab = "Age", main="Histogram Showing Age Distribution of Clients")
 
 # most site's clients are between the ages of 25 and 40
 ```
@@ -225,26 +273,30 @@ hist(clickad.nn$Area.Income, freq = T,col = "darkgreen",xlab = "Area Income", ma
 
 ```{r}
 
-#age <- clickad.nn$Age
 tsoin <- clickad.nn$Daily.Time.Spent.on.Site
-plot(age, tsoin, xlab="Age", ylab="Time Spent on the Site",main = "Scatterplot Showing Correlation Between Age and Time Spent on Site")
+# plotting a scatter plot between age and time spent on the site
+plot(age, tsoin, xlab="Age", ylab="Time Spent on the Site",main = "Scatterplot Showing Correlation Between Age and Time Spent on Site", col="orange")
 
+# there is a slight concentration of data points at ages 25-40 and time spent 70-90, showing a slight correlation.
 ```
 
 
 ```{r}
+# defining our x and y for the scatter
 ar.income <- clickad.nn$Area.Income
 int.con <- clickad.nn$Daily.Internet.Usage
-plot(ar.income, int.con, xlab="Area Income", ylab="Daily Internet Usage", main = "Scatterplot Showing Correlation Between Area Income and Daily Internet Usage",)
+# plotting a scatter plot between arean income and daily internet usage
+plot(ar.income, int.con, xlab="Area Income", ylab="Daily Internet Usage", main = "Scatterplot Showing Correlation Between Area Income and Daily Internet Usage", col="blue4")
 
-
+# scatter reveals slight correlation. High Income areas also record high daily internet usage
 ```
 
 ```{r}
 
+# plotting scatter plot between time spent on site and internet usage
+plot(tsoin, int.con, ylab="Internet Usage", xlab="Time Spent on Site", main = "Scatterplot Showing Correlation Between Time Spent on Site and Internet Usage",type = 'p', col="red")
 
-plot(tsoin, int.con, ylab="Internet Usage", xlab="Time Spent on Site", main = "Scatterplot Showing Correlation Between Time Spent on Site and Internet Usage")
-
+# High internet usage corresponds directly to time spent on site
 
 ```
 
