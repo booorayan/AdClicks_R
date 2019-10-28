@@ -605,3 +605,49 @@ accy <- (363 + 380) / (363 + 37 + 20 + 380) * 100
 accy
 ```
 
+Using K Nearest Neighbors
+
+```{r}
+# Defining train and test sets
+knnf.train <- merged.frm[1:500, 1:8]
+knnf.test <- merged.frm[501:1000, 1:8]
+knntes.train <- merged.frm[1:500, 9]
+knntes.test <- merged.frm[501:1000, 9]
+length(knntes.test)
+
+```
+
+```{r}
+#fitting the model with data
+knn.mod <- knn(train=knnf.train, test=knnf.test, cl= knntes.train, k=10)
+
+```
+
+
+```{r}
+#creating a confusion matrix using table function
+tabo <- table(knn.mod, knntes.test)
+tabo
+
+```
+
+```{r}
+akuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+
+akuracy(tabo)
+
+```
+
+
+```{r}
+#install.packages("gmodels")
+library(gmodels)
+CrossTable(x = knntes.test, y=knn.mod, prop.chisq=F)
+
+```
+
+
+```{r}
+
+
+```
