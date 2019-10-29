@@ -3,8 +3,8 @@ title: "Predicting Ad Clicks on  A Website"
 author: "Booorayan"
 date: "26/10/2019"
 output:
-  html_document: default
   word_document: default
+  html_document: default
 ---
 
 
@@ -301,8 +301,10 @@ plot(tsoin, int.con, ylab="Internet Usage", xlab="Time Spent on Site", main = "S
 ```
 
 ```{r}
+# getting the correlation of variables
 dat.cor <- cor(clickad.nn[c(1,2,3,4,5,7,9,10)], method = "pearson")
 palette = colorRampPalette(c("red", "orange", "white")) (20)
+# plotting a heatmap to show correlation of variables
 heatmap(dat.cor,main = "Heatmap Showing Correlation Between Numeric Variables",symm=T )
 
 ```
@@ -314,15 +316,12 @@ heatmap(dat.cor,main = "Heatmap Showing Correlation Between Numeric Variables",s
 
 ```{r}
 library(corrplot)
-
+ # plotting correlation plot to show correlation of variables
 corrplot(dat.cor)
-
+# correlation plot reveals strong correlation between time spent on site and daily internet usage
+# plot also shows a relatively strong correlation between time spent on site and area income.
 ```
 
-```{r}
-
-head(clickad.nn)
-```
 
 ```{r}
 merged.frame <- clickad.nn
@@ -331,14 +330,14 @@ head(merged.frame)
 
 
 ```{r}
+# displaying internal structure of variables
 str(merged.frame)
-#merged.frame <- data.matrix(merged.frame)
-
+# dataframe now has 11 numerical variables and 1 factor column
 ```
 
 ```{r}
 #merged.frame[sapply(merged.frame, is.factor)] <- data.matrix(merged.frame[sapply(merged.frame, is.factor)])
-
+# converting the facor column to numeric data type
 merged.frame = merged.frame %>% mutate_if(is.factor, as.numeric)
 
 ```
@@ -350,10 +349,12 @@ head(merged.frame)
 ```
 
 ```{r}
-
+# checking for unique values in the year, hour and minute columns
 unique(merged.frame$year)
 unique(merged.frame$hour)
 unique(merged.frame$minute)
+
+# all the three columns have a single unique value and can thus be dropped
 ```
 
 
@@ -375,15 +376,18 @@ normalize <- function(x) {
 ```
 
 ```{r}
+# applying the normalize function to numeric variables to normalize them
 feat.norm <- as.data.frame(lapply(merged.fr[c(1, 2, 3, 4, 5, 6, 8, 9)], normalize))
+
+# displayinga a summary of the variables to confirm the change has been effected
 summary(feat.norm)
 ```
 
 ```{r}
 head(feat.norm)
-
 ```
 ```{r}
+# merging the frame of the normalized frame with clicked on ad column
 merged.frm <- cbind(feat.norm, merged.fr[c(7)])
 
 head(merged.frm)
@@ -396,6 +400,7 @@ tail(merged.frm)
 ```{r}
 
 # split data into testing & training
+# set seed to work with same values/samples
 set.seed(1234)
 
 # 80-20 train/test split 
@@ -407,11 +412,11 @@ head(test)
 
 ```{r}
 
-# get predictors
+# get predictors/x.train
 predictor <- trainn %>%
   select(-c(Clicked.on.Ad, Country)) %>%
   as.matrix()
-
+# define x.test
 output <- trainn$Clicked.on.Ad %>%
   as.factor()
 
@@ -435,7 +440,7 @@ model
 
 rfpred = predict(model, type="response", newdata= as.data.frame(predictor))
 
-summary(rfpred)
+# summary(rfpred)
 
 table(output, rfpred)
 
@@ -477,12 +482,17 @@ tuned_model$finalModel
 ```
 
 ```{r}
+# training a logisitic regression model
 logit <- glm(Clicked.on.Ad ~ Daily.Time.Spent.on.Site + Age + Area.Income + Daily.Internet.Usage + Male + month + day, family="binomial", data=merged.frm)
 summary(logit)
+
+# the summary reveals that the important features are Daily.Time.Spent.on.Site, Age, Area.Income and Daily.Internet.Usage
+
 ```
 
 
 ```{r}
+# making predictions on training data
 predictTrain = predict(logit, type="response")
 
 summary(predictTrain)
@@ -501,7 +511,7 @@ acc
 ```
 
 ```{r}
-
+# test set
 predictorr <- test %>%
   select(-c(Clicked.on.Ad, Country)) %>%
   as.matrix()
@@ -513,7 +523,7 @@ outputt <- test$Clicked.on.Ad %>%
 
 
 ```{r}
-
+# making predicitions on test set
 predicted = predict(logit, type="response", newdata= as.data.frame(predictorr))
  
 summary(predicted)
@@ -529,7 +539,7 @@ accuracy
 Using XGBoost 
 
 ```{r}
-
+# training set features and labels
 predor <- trainn %>%
   select(-c(Clicked.on.Ad, Country)) %>%
   as.matrix()
@@ -542,7 +552,7 @@ outut <- trainn$Clicked.on.Ad %>%
 
 
 ```{r}
-
+# test set features and labels
 predorr <- test %>%
   select(-c(Clicked.on.Ad, Country)) %>%
   as.matrix()
@@ -584,7 +594,7 @@ print(paste("test-error=", err))
 
 ```{r}
 
-# train an xgboost model
+# train a tuned xgboost model
 xg.model.tuned <- xgboost(data = dtrain, # the data           
                  max.depth = 3, # the maximum depth of each decision tree
                  nround = 2, # max number of boosting iterations
@@ -623,6 +633,7 @@ print(paste("test-error=", erro))
 
 table(oututt,prred >= 0.3)
 
+# get accuracy
 accuy <- (362 + 380) / (362 + 38 + 20 + 380) * 100
 accuy
 
@@ -651,9 +662,10 @@ print(paste("test-error=", errr))
 
 
 ```{r}
-
+# generate confusion matrix using table
 table(oututt,ppred >= 0.3)
 
+# get accuracy
 accy <- (363 + 380) / (363 + 37 + 20 + 380) * 100
 accy
 ```
@@ -686,6 +698,7 @@ tabo
 ```
 
 ```{r}
+# get accuracy
 akuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
 
 akuracy(tabo)
